@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoMonitor - Painel Executivo com Gráfico Explicativo</title>
+    <!-- Importando o Chart.js para gráficos profissionais -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #00875f;
+            --primary-hover: #006644;
+            --accent: #ffab00;
+            --danger: #de350b;
+            --success: #36b37e;
+            --info: #0065ff;
+            --purple: #8b5cf6;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 15px;
+        }
+
+        header {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        @media (min-width: 768px) {
+            header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                text-align: left;
+                padding: 20px 30px;
+            }
+            body {
+                padding: 20px;
+            }
+        }
+
+        header h1 {
+            color: var(--success);
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        @media (min-width: 768px) {
+            header h1 { justify-content: flex-start; font-size: 1.8rem; }
+        }
+
+        .header-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        @media (min-width: 768px) {
+            .header-badges { justify-content: flex-end; }
+        }
+
+        .tariff-tag, .role-badge-tag {
+            background: rgba(54, 179, 126, 0.15);
+            color: var(--success);
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            border: 1px solid var(--success);
+        }
+
+        .role-badge-tag {
+            background: rgba(0, 101, 255, 0.15);
+            color: var(--info);
+            border: 1px solid var(--info);
+        }
+
+        /* Global Dashboard Cards */
+        .global-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        @media (min-width: 1024px) {
+            .global-metrics {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+            }
+        }
+
+        @media (min-width: 1440px) {
+            .global-metrics {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+
+        .metric-card {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .metric-card.green::after { background: var(--success); }
+        .metric-card.blue::after { background: var(--info); }
+        .metric-card.orange::after { background: var(--accent); }
+        .metric-card.purple::after { background: var(--purple); }
+        .metric-card.teal::after { background: #06b6d4; }
+        .metric-card.pink::after { background: #ec4899; }
+
+        .metric-card h3 {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .metric-card .value {
+            font-size: 1.3rem;
+            font-weight: 800;
+        }
+
+        @media (min-width: 768px) {
+            .metric-card .value { font-size: 1.6rem; }
+            .metric-card h3 { font-size: 0.8rem; }
+        }
+
+        .metric-card .unit {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: normal;
+        }
+
+        /* Seção do Gráfico Executivo */
+        .chart-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 300px;
+            }
+        }
+
+        /* Layout Grid Principal */
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        @media (min-width: 1200px) {
+            .dashboard-layout {
+                grid-template-columns: 2fr 1fr;
+            }
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .rooms-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) and (max-width: 1199px) {
+            .rooms-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .room-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .room-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .room-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-ocupada { background: rgba(54, 179, 126, 0.2); color: var(--success); border: 1px solid var(--success); }
+        .badge-ausente { background: rgba(222, 53, 11, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+        .badge-manutencao { background: rgba(255, 171, 0, 0.2); color: var(--accent); border: 1px solid var(--accent); }
+
+        /* Equipment List */
+        .equipment-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .equipment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .eq-info strong {
+            font-size: 0.9rem;
+        }
+
+        .eq-info span {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .eq-status {
+            font-weight: 700;
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .status-ligado { background: rgba(54, 179, 126, 0.2); color: var(--success); }
+        .status-desligado { background: rgba(222, 53, 11, 0.2); color: var(--danger); }
+        .status-manutencao { background: rgba(255, 171, 0, 0.2); color: var(--accent); }
+
+        .timer-box {
+            font-size: 0.85rem;
+            color: var(--accent);
+            font-weight: 600;
+            margin-bottom: 15px;
+            min-height: 22px;
+        }
+
+        /* Controls inside room */
+        .room-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border-top: 1px solid var(--border);
+            padding-top: 12px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 10px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: opacity 0.2s, background 0.2s;
+        }
+
+        button:active { opacity: 0.7; }
+
+        .btn-saida { background: var(--danger); color: white; }
+        .btn-entrada { background: var(--success); color: white; }
+        .btn-manutencao { background: var(--accent); color: #0f172a; width: 100%; }
+
+        /* Painel Lateral / Logs & Governança */
+        .sidebar-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+
+        .logs-box {
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            height: 220px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .log-item {
+            padding: 6px 8px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 3px solid var(--info);
+        }
+        .log-success { border-left-color: var(--success); }
+        .log-danger { border-left-color: var(--danger); }
+        .log-warning { border-left-color: var(--accent); }
+
+        .config-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        input[type="number"], select {
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            width: 100%;
+        }
+
+        .btn-action {
+            background: var(--info);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+        }
+
+        .admin-only {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🌱 EcoMonitor <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 400;"><br class="br-mobile">| Gestão Inteligente de Eficiência Energética</span></h1>
+        <div class="header-badges">
+            <div class="tariff-tag">⚡ Tarifa PA: R$ 1,885 / kWh</div>
+            <div class="role-badge-tag" id="currentRoleDisplay">👤 Perfil: Gestor (Admin)</div>
+        </div>
+    </header>
+
+    <!-- Global Dashboard Metrics (6 Indicadores Executivos) -->
+    <div class="global-metrics">
+        <div class="metric-card green">
+            <h3>Economia Direta</h3>
+            <div><span id="globalMoney" class="value">R$ 0,00</span></div>
+        </div>
+        <div class="metric-card teal">
+            <h3>Projeção Anual</h3>
+            <div><span id="annualMoney" class="value">R$ 0,00</span></div>
+        </div>
+        <div class="metric-card blue">
+            <h3>Energia Poupada</h3>
+            <div><span id="globalEnergy" class="value">0.00</span> <span class="unit">kWh</span></div>
+        </div>
+        <div class="metric-card purple">
+            <h3>Carbono Evitado (ESG)</h3>
+            <div><span id="carbonAvoided" class="value">0.00</span> <span class="unit">kg CO₂</span></div>
+        </div>
+        <div class="metric-card orange">
+            <h3>Tempo Ocioso</h3>
+            <div><span id="globalTime" class="value">0</span> <span class="unit">min</span></div>
+        </div>
+        <div class="metric-card pink">
+            <h3>Cortes Automáticos</h3>
+            <div><span id="globalShutdowns" class="value">0</span> <span class="unit">vezes</span></div>
+        </div>
+    </div>
+
+    <!-- Seção de Gráficos Executivos -->
+    <div class="chart-section">
+        <h2 class="section-title" style="margin-bottom: 10px;">📊 Desempenho de Eficiência por Sala (kWh Poupado)</h2>
+        <div class="chart-container">
+            <canvas id="efficiencyChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Layout Principal: Salas vs Sidebar de Gestão -->
+    <div class="dashboard-layout">
+        
+        <!-- Coluna Esquerda: Salas -->
+        <div>
+            <h2 class="section-title">🏢 Monitoramento de Salas em Tempo Real</h2>
+            <div class="rooms-grid" id="roomsContainer">
+                <!-- Renderizado via JS -->
+            </div>
+        </div>
+
+        <!-- Coluna Direita: Governança, Configurações e Central de Alertas -->
+        <div class="sidebar-container">
+            
+            <!-- Painel de Governança e Perfil -->
+            <div class="card-panel">
+                <h2 class="section-title" style="font-size: 1rem; margin-bottom: 12px;">🛡️ Governança e Acessos</h2>
+                <div class="config-group">
+                    <label for="profileSelect" style="font-size: 0.85rem; color: var(--text-muted);">Alternar Perfil de Demonstração:</label>
+                    <select id="profileSelect">
+                        <option value="admin">Gestor / Administrador (Acesso Total)</option>
+                        <option value="professor">Professor / Operador (Visualização Parcial)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Painel de Configuração de Timeout -->
+            <div class="card-panel admin-only" id="adminConfigPanel">
+                <h2 class="section-title" style="font-size: 1rem; margin-bottom: 12px;">⚙️ Configuração do Sistema</h2>
+                <div class="config-group">
+                    <label for="globalTimeoutInput" style="font-size: 0.85rem; color: var(--text-muted);">Tempo de Ociosidade (segundos):</label>
+                    <input type="number" id="globalTimeoutInput" value="10" min="3" max="300" step="1">
+                </div>
+                <button class="btn-action" id="saveGlobalConfig">Salvar Parâmetros</button>
+            </div>
+
+            <!-- Central de Alertas e Logs Gerenciais -->
+            <div class="card-panel">
+                <h2 class="section-title" style="font-size: 1rem; margin-bottom: 12px;">📋 Central de Alertas & Logs</h2>
+                <div class="logs-box" id="logsContainer">
+                    <div class="log-item">[10:50:00] Sistema inicializado. Histórico de ociosidade carregado.</div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        const TARIFF_PA = 1.885; // R$ por kWh no Pará
+        const CO2_FACTOR_KG = 0.081; // Fator médio de conversão kg CO2 por kWh
+        let timeoutSeconds = 10;
+        let userRole = 'admin';
+
+        // Salas configuradas com potências e histórico pré-populado variados para o gráfico ficar explicativo logo de cara
+        let rooms = [
+            { id: 1, name: "Sala 1 - Reuniões Executivas", power: 1240, occupied: false, lampOn: false, acOn: false, maintenance: false, countdown: 10, counting: false, interval: null, stats: { energy: 4.85, time: 24.0, cuts: 12 } },
+            { id: 2, name: "Sala 2 - Laboratório de TI", power: 2150, occupied: false, lampOn: false, acOn: false, maintenance: false, countdown: 10, counting: false, interval: null, stats: { energy: 12.40, time: 55.5, cuts: 24 } },
+            { id: 3, name: "Sala 3 - Treinamento Corporativo", power: 1680, occupied: false, lampOn: false, acOn: false, maintenance: false, countdown: 10, counting: false, interval: null, stats: { energy: 7.92, time: 38.0, cuts: 17 } }
+        ];
+
+        const roomsContainer = document.getElementById('roomsContainer');
+        const globalTimeoutInput = document.getElementById('globalTimeoutInput');
+        const saveGlobalConfigBtn = document.getElementById('saveGlobalConfig');
+        const profileSelect = document.getElementById('profileSelect');
+        const currentRoleDisplay = document.getElementById('currentRoleDisplay');
+        const adminConfigPanel = document.getElementById('adminConfigPanel');
+        const logsContainer = document.getElementById('logsContainer');
+
+        // Configuração do Gráfico Chart.js com cores distintas e escalas profissionais
+        const ctx = document.getElementById('efficiencyChart').getContext('2d');
+        const efficiencyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: rooms.map(r => r.name.split(' - ')[1] || r.name), // Nomes claros no eixo X
+                datasets: [{
+                    label: 'Energia Poupada Acumulada (kWh)',
+                    data: rooms.map(r => r.stats.energy),
+                    backgroundColor: [
+                        'rgba(54, 179, 126, 0.85)',  // Verde Esmeralda (Sala 1)
+                        'rgba(0, 101, 255, 0.85)',   // Azul Vivo (Sala 2 - Maior consumo/economia)
+                        'rgba(255, 171, 0, 0.85)'    // Laranja Âmbar (Sala 3)
+                    ],
+                    borderColor: [
+                        '#36b37e',
+                        '#0065ff',
+                        '#ffab00'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: '#f8fafc', font: { family: 'Segoe UI', weight: '600' } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` Economia: ${context.raw.toFixed(2)} kWh`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#334155' },
+                        ticks: { color: '#94a3b8' },
+                        title: { display: true, text: 'kWh Poupados', color: '#94a3b8' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#f8fafc', font: { weight: 'bold' } }
+                    }
+                }
+            }
+        });
+
+        function addLog(text, type = 'info') {
+            const timeStr = new Date().toLocaleTimeString('pt-BR');
+            const logDiv = document.createElement('div');
+            logDiv.className = `log-item log-${type}`;
+            logDiv.textContent = `[${timeStr}] ${text}`;
+            logsContainer.prepend(logDiv);
+        }
+
+        function renderRooms() {
+            roomsContainer.innerHTML = '';
+            rooms.forEach(room => {
+                let badgeClass = 'badge-ausente';
+                let badgeText = 'Modo Ausente';
+                
+                if (room.maintenance) {
+                    badgeClass = 'badge-manutencao';
+                    badgeText = 'Manutenção Manual';
+                } else if (room.occupied) {
+                    badgeClass = 'badge-ocupada';
+                    badgeText = 'Modo Ocupado';
+                }
+
+                const card = document.createElement('div');
+                card.className = 'room-card';
+                card.innerHTML = `
+                    <div>
+                        <div class="room-header">
+                            <span class="room-title">${room.name}</span>
+                            <span class="badge ${badgeClass}">${badgeText}</span>
+                        </div>
+
+                        <div class="equipment-list">
+                            <div class="equipment-item">
+                                <div class="eq-info">
+                                    <strong>💡 Lâmpada LED</strong>
+                                    <span>Iluminação</span>
+                                </div>
+                                <span class="eq-status ${getEqStatusClass(room.lampOn, room.maintenance)}">${getEqStatusText(room.lampOn, room.maintenance)}</span>
+                            </div>
+                            <div class="equipment-item">
+                                <div class="eq-info">
+                                    <strong>❄️ Ar-Condicionado</strong>
+                                    <span>Climatização</span>
+                                </div>
+                                <span class="eq-status ${getEqStatusClass(room.acOn, room.maintenance)}">${getEqStatusText(room.acOn, room.maintenance)}</span>
+                            </div>
+                        </div>
+
+                        <div class="timer-box" id="timer-text-${room.id}">
+                            ${getTimerText(room)}
+                        </div>
+                    </div>
+
+                    <div class="room-controls">
+                        <div class="btn-group">
+                            <button class="btn-saida" onclick="simulateAction(${room.id}, 'out')">Simular Saída</button>
+                            <button class="btn-entrada" onclick="simulateAction(${room.id}, 'in')">Simular Entrada</button>
+                        </div>
+                        ${userRole === 'admin' ? `
+                        <button class="btn-manutencao" onclick="toggleMaintenance(${room.id})">
+                            ${room.maintenance ? '🔓 Desativar Manutenção' : '🛠️ Modo Manutenção'}
+                        </button>` : ''}
+                    </div>
+                `;
+                roomsContainer.appendChild(card);
+            });
+            updateGlobalDashboard();
+        }
+
+        function getEqStatusClass(isOn, isMaint) {
+            if (isMaint) return 'status-manutencao';
+            return isOn ? 'status-ligado' : 'status-desligado';
+        }
+
+        function getEqStatusText(isOn, isMaint) {
+            if (isMaint) return 'MANUTENÇÃO';
+            return isOn ? 'LIGADO' : 'DESLIGADO';
+        }
+
+        function getTimerText(room) {
+            if (room.maintenance) return '⚠️ Sob intervenção manual da equipe';
+            if (room.counting) return `⏳ Alguém saiu! Desliga em: ${room.countdown}s`;
+            if (!room.occupied) return `💤 Sala ociosa e equipamentos desligados`;
+            return `✅ Pessoas presentes no ambiente`;
+        }
+
+        function simulateAction(roomId, action) {
+            const room = rooms.find(r => r.id === roomId);
+            if (room.maintenance) {
+                alert('Sala em Modo de Manutenção. Desative para simular pelo sensor.');
+                return;
+            }
+
+            if (action === 'in') {
+                clearInterval(room.interval);
+                room.counting = false;
+                room.occupied = true;
+                room.lampOn = true;
+                room.acOn = true;
+                room.countdown = timeoutSeconds;
+                addLog(`Sensor detectou presença na ${room.name}. Equipamentos ligados.`, 'success');
+            } else if (action === 'out') {
+                if (room.occupied && !room.counting) {
+                    room.counting = true;
+                    room.countdown = timeoutSeconds;
+                    addLog(`Ambiente vazio detectado na ${room.name}. Contagem iniciada (${timeoutSeconds}s).`, 'warning');
+                    startRoomTimer(room);
+                } else if (!room.occupied) {
+                    addLog(`Aviso: ${room.name} já está em Modo Ausente.`, 'info');
+                }
+            }
+            renderRooms();
+        }
+
+        function toggleMaintenance(roomId) {
+            const room = rooms.find(r => r.id === roomId);
+            room.maintenance = !room.maintenance;
+            
+            if (room.maintenance) {
+                clearInterval(room.interval);
+                room.counting = false;
+                room.lampOn = true;
+                room.acOn = true;
+                addLog(`Modo Manutenção ativado na ${room.name}.`, 'warning');
+            } else {
+                room.occupied = false;
+                room.lampOn = false;
+                room.acOn = false;
+                room.countdown = timeoutSeconds;
+                addLog(`Modo Manutenção desativado na ${room.name}. Retornando automação.`, 'info');
+            }
+            renderRooms();
+        }
+
+        function startRoomTimer(room) {
+            clearInterval(room.interval);
+            room.interval = setInterval(() => {
+                if (room.maintenance) {
+                    clearInterval(room.interval);
+                    return;
+                }
+
+                if (room.countdown > 0) {
+                    room.countdown--;
+                    renderRooms();
+                } else {
+                    clearInterval(room.interval);
+                    room.counting = false;
+                    room.occupied = false;
+                    room.lampOn = false;
+                    room.acOn = false;
+
+                    const hoursSaved = (timeoutSeconds / 3600);
+                    const kwhSaved = (room.power * hoursSaved) / 1000;
+
+                    room.stats.energy += kwhSaved;
+                    room.stats.time += (timeoutSeconds / 60);
+                    room.stats.cuts += 1;
+
+                    addLog(`Economia Ativa: ${room.name} desligada por ociosidade. +${kwhSaved.toFixed(3)} kWh`, 'success');
+                    
+                    // Atualiza o gráfico de forma dinâmica e imediata
+                    efficiencyChart.data.datasets[0].data = rooms.map(r => r.stats.energy);
+                    efficiencyChart.update();
+
+                    renderRooms();
+                }
+            }, 1000);
+        }
+
+        saveGlobalConfigBtn.addEventListener('click', () => {
+            const val = parseInt(globalTimeoutInput.value);
+            if (val >= 3) {
+                timeoutSeconds = val;
+                rooms.forEach(r => {
+                    if (!r.counting) r.countdown = timeoutSeconds;
+                });
+                addLog(`Parâmetro alterado: Tempo de ociosidade ajustado para ${timeoutSeconds}s.`, 'info');
+                alert(`Tempo de espera configurado para ${timeoutSeconds} segundos!`);
+                renderRooms();
+            } else {
+                alert('O tempo mínimo é de 3 segundos.');
+            }
+        });
+
+        profileSelect.addEventListener('change', (e) => {
+            userRole = e.target.value;
+            if (userRole === 'admin') {
+                currentRoleDisplay.textContent = '👤 Perfil: Gestor (Admin)';
+                adminConfigPanel.style.display = 'block';
+                addLog('Perfil alterado para Gestor/Administrador.', 'info');
+            } else {
+                currentRoleDisplay.textContent = '👤 Perfil: Professor / Operador';
+                adminConfigPanel.style.display = 'none';
+                addLog('Perfil alterado para Professor/Operador.', 'info');
+            }
+            renderRooms();
+        });
+
+        function updateGlobalDashboard() {
+            let totalEnergy = 0;
+            let totalMinutes = 0;
+            let totalCuts = 0;
+
+            rooms.forEach(r => {
+                totalEnergy += r.stats.energy;
+                totalMinutes += r.stats.time;
+                totalCuts += r.stats.cuts;
+            });
+
+            const totalMoney = totalEnergy * TARIFF_PA;
+            const annualProjection = totalMoney * 12; // projeção mensal/anual proporcional
+            const carbonKg = totalEnergy * CO2_FACTOR_KG;
+
+            document.getElementById('globalMoney').textContent = `R$ ${totalMoney.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            document.getElementById('annualMoney').textContent = `R$ ${annualProjection.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`;
+            document.getElementById('globalEnergy').textContent = totalEnergy.toFixed(2);
+            document.getElementById('carbonAvoided').textContent = carbonKg.toFixed(2);
+            document.getElementById('globalTime').textContent = totalMinutes.toFixed(1);
+            document.getElementById('globalShutdowns').textContent = totalCuts;
+        }
+
+        renderRooms();
+        updateGlobalDashboard();
+    </script>
+</body>
+</html>
